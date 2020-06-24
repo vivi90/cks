@@ -79,5 +79,5 @@ export.extractKritaDocument()
 export.findLayers()
 export.addLayers()
 export.save()
-#export.cleanup()
+export.cleanup()
 del export
