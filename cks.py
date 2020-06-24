@@ -1,10 +1,12 @@
 from sys import argv as argument
+from os.path import getsize
 from zipfile import ZipFile
-from xml.etree.ElementTree import ElementTree, Element, SubElement, Comment
+from xml.etree.ElementTree import ElementTree, Element
 from shutil import rmtree as delete
 
 class Application:
     NAMESPACE_KRITA = "http://www.calligra.org/DTD/krita"
+    NAMESPACE_SVG = "http://www.w3.org/2000/svg"
 
     def __init__(self, filename):
         self.filename = filename
@@ -12,7 +14,7 @@ class Application:
 
     def prepare(self):
         self.svg = Element("svg")
-        self.svg.set("xmlns", "http://www.w3.org/2000/svg")
+        self.svg.set("xmlns", self.NAMESPACE_SVG)
         self.svg.set("xmlns:xlink", "http://www.w3.org/1999/xlink")
         self.svg.set("xmlns:krita", "http://krita.org/namespaces/svg/krita")
         self.svg.set("xmlns:sodipodi", "http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd")
@@ -26,7 +28,8 @@ class Application:
     def save(self):
         ElementTree(self.svg).write(self.filename + ".svg")
 
-    def mergeLayers(self):
+    def findLayers(self):
+        self.layers = []
         namespace = {"krita": self.NAMESPACE_KRITA}
         root = ElementTree(ElementTree().parse(self.filename + "/maindoc.xml")).getroot()
         imageName = root.find("./krita:IMAGE", namespace).get("name")
@@ -39,18 +42,32 @@ class Application:
                         walkRecursive(subLayer)
                 else:
                     if layer.get("nodetype") == "shapelayer":
-                        self.addLayer(self.filename + "/" + imageName + "/layers/" + layer.get("filename") + "." + layer.get("nodetype") + "/content.svg")
+                        self.layers.append([layer.get("filename"), self.filename + "/" + imageName + "/layers/" + layer.get("filename") + "." + layer.get("nodetype") + "/content.svg"])
+                        #self.addLayer(self.filename + "/" + imageName + "/layers/" + layer.get("filename") + "." + layer.get("nodetype") + "/content.svg")
             return
         for layer in layers:
             if layer.get("visible") == "1":
                 walkRecursive(layer)
 
-    def addLayer(self, path):
-        print(path)
+    def addLayers(self):
+        self.layers.reverse()
+        for layer in self.layers:
+            if getsize(layer[1]) > 0:
+                namespace = {"svg": self.NAMESPACE_SVG}
+                root = ElementTree(ElementTree().parse(layer[1])).getroot()
+                self.svg.set("width", root.get("width"))
+                self.svg.set("height", root.get("height"))
+                self.svg.set("viewBox", root.get("viewBox"))
+                group = Element("g")
+                group.set("id", layer[0])
+                for child in root:
+                    group.append(child)
+                self.svg.append(group)
 
 export = Application(argument[1].split(".")[0])
 export.extractKritaDocument()
-export.mergeLayers()
+export.findLayers()
+export.addLayers()
 export.save()
-#export.cleanup()
+export.cleanup()
 del export
