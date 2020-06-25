@@ -1,3 +1,11 @@
+"""This script exports all vector layers from a given Krita document into a single SVG file.
+
+:Author: Vivien Richter
+:Version: 1.0.1
+:License: `GNU General Public License v3.0 <https://www.gnu.org/licenses>`_
+:Repository: `GitHub <https://github.com/vivi90/cks.git>`_
+"""
+
 from sys import argv as argument
 from os.path import getsize
 from zipfile import ZipFile
@@ -5,14 +13,23 @@ from xml.etree.ElementTree import ElementTree, Element
 from shutil import rmtree as delete
 
 class Application:
+    '''This class wraps all necessary functionality'''
+
     NAMESPACE_KRITA = {"krita": "http://www.calligra.org/DTD/krita"}
     NAMESPACE_SVG = {"svg": "http://www.w3.org/2000/svg"}
 
-    def __init__(self, filename):
+    def __init__(self, filename: str) -> None:
+        """Constructor.
+
+        :param filename: The Krita document file path.
+        """
+
         self.filename = filename
         self.prepare()
 
-    def prepare(self):
+    def prepare(self) -> None:
+        '''Prepares SVG export structure.'''
+
         self.svg = Element("svg")
         self.svg.set("xmlns", "http://www.w3.org/2000/svg")
         self.svg.set("xmlns:xlink", "http://www.w3.org/1999/xlink")
@@ -20,16 +37,24 @@ class Application:
         self.svg.set("xmlns:sodipodi", "http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd")
         self.svg.append(Element("defs"))
 
-    def extractKritaDocument(self):
+    def extractKritaDocument(self) -> None:
+        '''Extracts all content of the ZIP compressed Krita document.'''
+
         ZipFile(self.filename + ".kra").extractall(self.filename)
 
-    def cleanup(self):
+    def cleanup(self) -> None:
+        '''Removes all extracted content.'''
+
         delete(self.filename)
 
-    def save(self):
+    def save(self) -> None:
+        '''Saves the final SVG file.'''
+
         ElementTree(self.svg).write(self.filename + ".svg")
 
-    def findLayers(self):
+    def findLayers(self) -> None:
+        '''Detects all vector layers inside the extracted Krita document.'''
+
         self.layers = []
         root = ElementTree(ElementTree().parse(self.filename + "/maindoc.xml")).getroot()
         imageName = root.find("./krita:IMAGE", self.NAMESPACE_KRITA).get("name")
@@ -49,7 +74,9 @@ class Application:
             if layer.get("visible") == "1":
                 walkRecursive(layer)
 
-    def addLayers(self):
+    def addLayers(self) -> None:
+        '''Adds detected vector layers to the prepared SVG export structure.'''
+
         defs = self.svg.find("./defs")
         self.layers.reverse()
         for layer in self.layers:
@@ -74,6 +101,7 @@ class Application:
                         group.append(child)
                 self.svg.append(group)
 
+# Running all steps:
 export = Application(argument[1].split(".")[0])
 export.extractKritaDocument()
 export.findLayers()
