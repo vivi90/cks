@@ -1,13 +1,16 @@
+#!/usr/bin/python
 """This script exports all vector layers from a given Krita document into a single SVG file.
 
+*Usage:* cks [KRITA_FILE]
+
 :Author: Vivien Richter
-:Version: 1.0.1
+:Version: 1.1.0
 :License: `GNU General Public License v3.0 <https://www.gnu.org/licenses>`_
 :Repository: `GitHub <https://github.com/vivi90/cks.git>`_
 """
 
-from sys import argv as argument
-from os.path import getsize
+from sys import argv as arguments
+from os.path import getsize, isfile
 from zipfile import ZipFile
 from xml.etree.ElementTree import ElementTree, Element
 from shutil import rmtree as delete
@@ -18,13 +21,13 @@ class Application:
     NAMESPACE_KRITA = {"krita": "http://www.calligra.org/DTD/krita"}
     NAMESPACE_SVG = {"svg": "http://www.w3.org/2000/svg"}
 
-    def __init__(self, filename: str) -> None:
+    def __init__(self, file: str) -> None:
         """Constructor.
 
-        :param filename: The Krita document file path.
+        :param file: The Krita document file path.
         """
 
-        self.filename = filename
+        self.filename = file.split(".")[0]
         self.prepare()
 
     def prepare(self) -> None:
@@ -102,10 +105,17 @@ class Application:
                 self.svg.append(group)
 
 # Running all steps:
-export = Application(argument[1].split(".")[0])
-export.extractKritaDocument()
-export.findLayers()
-export.addLayers()
-export.save()
-export.cleanup()
-del export
+if len(arguments) > 1:
+    file = arguments[1]
+    if isfile(file):
+        export = Application(file)
+        export.extractKritaDocument()
+        export.findLayers()
+        export.addLayers()
+        export.save()
+        export.cleanup()
+        del export
+    else:
+        print("File not found, aborting.")
+else:
+    print(__doc__)
