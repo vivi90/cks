@@ -1,7 +1,7 @@
 #!/usr/bin/python
-"""This script exports all vector layers from a given Krita document into a single SVG file.
+"""This Python script exports all vector layers from a given Krita document into a single SVG file.
 
-*Usage:* cks [KRITA_FILE]
+*Usage:* cks.py [KRITA_FILE]
 
 :Author: Vivien Richter
 :Version: 1.1.0
